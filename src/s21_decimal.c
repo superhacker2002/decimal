@@ -117,7 +117,7 @@ void s21_shift_right(int* num, int shift, int n) {
 //     return flag;
 // }
 
-// выводит число в двоичной системе
+// выводит число в двоичном представлении
 void print_decimal(s21_decimal number) {
     for (int i = 95; i >= 0; i--) {
         if (s21_bit(number, i)) printf("1");
