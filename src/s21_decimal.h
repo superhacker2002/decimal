@@ -11,6 +11,9 @@ typedef struct {
 } s21_decimal;
 
 int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
-int s21_bit(int number, int byte);
+// int s21_bit(int number, int byte);
+int s21_bit(s21_decimal number, int byte);
 int s21_equals_intmax(int num);
-void s21_shift(int* num, int shift, int n);
+// void s21_shift_left(int* num, int shift, int n);
+void s21_shift_left(s21_decimal* number, int shift, int n);
+void print_decimal(s21_decimal number);
