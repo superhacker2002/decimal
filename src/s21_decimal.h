@@ -17,3 +17,7 @@ int s21_equals_intmax(int num);
 // void s21_shift_left(int* num, int shift, int n);
 void s21_shift_left(s21_decimal* number, int shift, int n);
 void print_decimal(s21_decimal number);
+int s21_from_int_to_decimal(int src, s21_decimal *dst);
+void s21_decimal_init(s21_decimal* num);
+int s21_from_float_to_decimal(float src, s21_decimal *dst);
+int s21_is_less(s21_decimal num1, s21_decimal num2);
