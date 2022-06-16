@@ -2,13 +2,24 @@
 // bits[0] - 
 
 int main() {
-    s21_decimal x = {2147483647,12,0,0}; // 2147483647
-    s21_decimal y = {7,0,3,0};
+    s21_decimal x = {0,0,0,0}; // 2147483647
+    s21_decimal y = {0,0,0,0};
     s21_decimal res = {0, 30, 30, 1};
     // s21_add(x, y, &res);
     // printf("%d %d %d %d\n", res.bits[0], res.bits[1], res.bits[2], res.bits[3]);
-    int num = 3;
-    s21_from_int_to_decimal(num, &res);
+    // int num = 3;
+    // s21_from_int_to_decimal(num, &res);
+    char decimal[100];
+    char decimal1[100];
+    scanf("%s", decimal);
+    scanf("%s", decimal1);
+    get_decimal(&y, decimal1);
+    get_decimal(&x, decimal);
+    print_decimal(x);
+    printf("\n");
+    print_decimal(y);
+    printf("\n");
+    s21_add(x,y, &res);
     print_decimal(res);
     // printf("%d %d %d %d", x.bits[0], x.bits[1], x.bits[2], x.bits[3]);
     // int a = 236;
@@ -111,6 +122,17 @@ void print_decimal(s21_decimal number) {
         if (s21_get_bit(number, i)) printf("1");
         else printf("0");
         if (i == 32 || i == 64 || i == 96) printf(" ");
+    }
+}
+
+
+void get_decimal(s21_decimal* num, char* nums) {
+    for (int i = 0, j = strlen(nums); i <= strlen(nums); i++, j--) {
+        if (nums[i] == '0') {
+            s21_set_bit(num, j, 0);
+        } else if (nums[i] == '1') {
+            s21_set_bit(num, j, 1);
+        }
     }
 }
 

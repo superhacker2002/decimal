@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 
 #define number_is_ok 0
 #define number_is_plus_inf 1
@@ -21,3 +22,4 @@ int s21_from_int_to_decimal(int src, s21_decimal *dst);
 void s21_decimal_init(s21_decimal* num);
 int s21_from_float_to_decimal(float src, s21_decimal *dst);
 int s21_is_less(s21_decimal num1, s21_decimal num2);
+void get_decimal(s21_decimal* num, char* nums);
