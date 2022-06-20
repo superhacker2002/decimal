@@ -2,31 +2,13 @@
 // bits[0] - 
 
 int main() {
-    s21_decimal x = {2147483647,12,0,0}; // 2147483647
-    s21_decimal y = {7,0,3,0};
-    s21_decimal res = {0, 30, 30, 1};
-    // s21_add(x, y, &res);
-    // printf("%d %d %d %d\n", res.bits[0], res.bits[1], res.bits[2], res.bits[3]);
-    int num = 3;
-    s21_from_int_to_decimal(num, &res);
+    s21_decimal num1 = {1,0,0,0};
+    s21_decimal num2 = {2,0,0,0};
+    s21_decimal res;
+    int num3 = -100;
+    // s21_add(num1, num2, &res);
+    s21_from_int_to_decimal(num3, &res);
     print_decimal(res);
-    // printf("%d %d %d %d", x.bits[0], x.bits[1], x.bits[2], x.bits[3]);
-    // int a = 236;
-    // int b = 567;
-    // int res = 1;
-    // // printf("%d\n", res);
-    // // res^=1<<0; // сдвигаем нулевой бит на 1
-    // // res^=1<<1; // сдвигаем первый бит на 1
-    // // res^=1<<2; // сдвигаем второй бит на 1
-    // // printf("%d\n", res);
-    // // res = ~res;
-    // // res^=1<<0;
-    // // printf("%d\n", res);
-    // if (res&1<<31) printf("число отрицательное"); // если в 32 бите стоит 1
-    // else printf("число положительное");
-
-    // if (s21_get_bit(res,31)) printf("включен");
-    // else printf("не включен");
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -34,32 +16,6 @@ int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
     int n = 0; // итератор для битов чисел
     int tmp = 0; // в уме
     s21_decimal_init(result);
-    // while(n < 31) {
-    //     if (!s21_get_bit(value_1.bits[0], n) && !s21_get_bit(value_2.bits[0],n) && tmp == 0) { // 000
-    //         // res[0] не меняем остается нулём
-    //     } else if (!s21_get_bit(value_1.bits[0], n) && !s21_get_bit(value_2.bits[0],n) && tmp == 1) { // 001
-    //         result->bits[0]^=1<<n; // сдвигаем нный байт на противоложный, то бишь на 1
-    //         tmp = 0;
-    //     } else if (!s21_get_bit(value_1.bits[0], n) && s21_get_bit(value_2.bits[0],n) && tmp == 0) { // 010
-    //         result->bits[0]^=1<<n; // сдвигаем нный байт на противоложный, то бишь на 1
-    //     } else if (!s21_get_bit(value_1.bits[0], n) && s21_get_bit(value_2.bits[0],n) && tmp == 1) { // 011
-    //         // res[0] не меняем остается нулём так как 1 + 1 = 10
-    //         tmp = 1;
-    //     } else if (s21_get_bit(value_1.bits[0], n) && !s21_get_bit(value_2.bits[0],n) && tmp == 0) { // 100
-    //         result->bits[0]^=1<<n; // сдвигаем нный байт на противоложный, то бишь на 1
-    //     } else if (s21_get_bit(value_1.bits[0], n) && !s21_get_bit(value_2.bits[0],n) && tmp == 1) { // 101
-    //         // res[0] не меняем остается нулём так как 1 + 1 = 10
-    //         tmp = 1;
-    //     } else if (s21_get_bit(value_1.bits[0], n) && s21_get_bit(value_2.bits[0],n) && tmp == 0) { // 110
-    //         // res[0] не меняем остается нулём так как 1 + 1 = 10
-    //         tmp = 1;
-    //     } else if (s21_get_bit(value_1.bits[0], n) && s21_get_bit(value_2.bits[0],n) && tmp == 1) { // 111
-    //         result->bits[0]^=1<<n;
-    //         tmp = 1;
-    //     }
-    //     n++;
-    // }
-    // int i = 0;
     while(n < 96) {
         // if (s21_equals_intmax(result->bits[i])) i++;
 
@@ -87,7 +43,7 @@ int s21_get_bit(s21_decimal number, int byte) {
 
 // Устанавливает byte-й бит в числе number на n=(0/1)
 void s21_set_bit(s21_decimal* number, int byte, int n) {
-    if (s21_get_bit(*number, byte) != n) 
+    if (s21_get_bit(*number, byte) != n)
         s21_shift_left(number, 1, byte);
 }
 
@@ -178,6 +134,27 @@ void s21_set_equal_scale(s21_decimal* num1, s21_decimal* num2) {
     }
 }
 
+// проверяет что число num1 меньше чем число num2. Возвращает 1 - TRUE, 0 - FALSE.
 int s21_is_less(s21_decimal num1, s21_decimal num2) {
-
+    //s21_set_equal_scale(&num1, &num2); // приравнием скейл чисел, что проверять только bits[0-2]
+    int result = 0;
+    if (s21_get_bit(num1, 127) && !s21_get_bit(num2, 127)) {  // если num1 отрицательное, а num2 положительное
+        result = 1;
+    } else if (!s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+        result = 0;
+    } else {
+        int n = 95;
+        while (n >= 0) {
+            if (s21_get_bit(num1, n) < s21_get_bit(num2, n)) {
+                result = 1;
+                break;
+            } else if (s21_get_bit(num1, n) > s21_get_bit(num2, n)) {
+                result = 0;
+                break;
+            } else {
+                n--;
+            }
+        }
+    }
+    return result;
 }

@@ -21,3 +21,4 @@ int s21_from_int_to_decimal(int src, s21_decimal *dst);
 void s21_decimal_init(s21_decimal* num);
 int s21_from_float_to_decimal(float src, s21_decimal *dst);
 int s21_is_less(s21_decimal num1, s21_decimal num2);
+void s21_set_bit(s21_decimal* number, int byte, int n);
