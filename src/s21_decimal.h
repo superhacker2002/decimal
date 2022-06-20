@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 
 #define number_is_ok 0
 #define number_is_plus_inf 1

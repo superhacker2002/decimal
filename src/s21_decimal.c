@@ -70,6 +70,17 @@ void print_decimal(s21_decimal number) {
     }
 }
 
+
+void get_decimal(s21_decimal* num, char* nums) {
+    for (int i = 0, j = strlen(nums); i <= strlen(nums); i++, j--) {
+        if (nums[i] == '0') {
+            s21_set_bit(num, j, 0);
+        } else if (nums[i] == '1') {
+            s21_set_bit(num, j, 1);
+        }
+    }
+}
+
 //  конвертация из int в s21_decimal. Возвращает 0 при успехе и 1 при ошибке
 int s21_from_int_to_decimal(int src, s21_decimal *dst) {
     int res = 0;
