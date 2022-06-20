@@ -5,9 +5,9 @@ int main() {
     s21_decimal num1 = {1,0,0,0};
     s21_decimal num2 = {1,0,0,0};
     // s21_decimal res;
-    s21_from_int_to_decimal(-2, &num1);
-    s21_from_int_to_decimal(-3, &num2);
-    printf(s21_is_less(num1, num2) ? "menshe" : "net");
+    s21_from_int_to_decimal(101, &num1);
+    s21_from_int_to_decimal(100, &num2);
+    printf(s21_is_less_or_equal(num1, num2) ? "menshe ili ravni" : "net");
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -28,6 +28,17 @@ int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
             tmp = 1;
         }
         n++;
+    }
+    return 0;
+}
+
+// Умножает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
+int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    int n = 0;
+    int tmp = 0;
+    s21_decimal_init(&result);
+    while (n < 96) {
+        
     }
     return 0;
 }
@@ -153,14 +164,14 @@ int s21_is_less(s21_decimal num1, s21_decimal num2) {
         int n = 95;
         while (n >= 0) {
             if (s21_get_bit(num1, n) < s21_get_bit(num2, n)) {
-                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {  // если оба числа меньше 0
                     result = 0;
                 } else {
                 result = 1;
                 }
                 break;
             } else if (s21_get_bit(num1, n) > s21_get_bit(num2, n)) {
-                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {  // если оба числа меньше 0
                     result = 1;
                 } else {
                 result = 0;
@@ -186,14 +197,14 @@ int s21_is_greater(s21_decimal num1, s21_decimal num2) {
         int n = 95;
         while (n >= 0) {
             if (s21_get_bit(num1, n) > s21_get_bit(num2, n)) {
-                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {  // если оба числа меньше 0
                     result = 0;
                 } else {
                     result = 1;
                 }
                 break;
             } else if (s21_get_bit(num1, n) < s21_get_bit(num2, n)) {
-                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {  // если оба числа меньше 0
                     result = 1;
                 } else {
                     result = 0;
@@ -205,5 +216,39 @@ int s21_is_greater(s21_decimal num1, s21_decimal num2) {
         }
     }
     return result;
+}
+
+// Возвращает 1 - если num1 == num2, иначе - 0
+int s21_is_equal(s21_decimal num1, s21_decimal num2) {
+    // s21_set_equal_scale(&num1, &num2);  // приравнять scale 
+    int result = 1;
+    if (s21_get_bit(num1, 127) != s21_get_bit(num2, 127)) {
+        result = 0;
+    } else {
+        int n = 0;
+        while (n < 96) {
+            if (s21_get_bit(num1, n) != s21_get_bit(num2, n)) {
+                result = 0;
+                break;
+            }
+            n++;
+        }
+    }
+    return result;
+}
+
+// Возвращает 1 - если num1 <= num2, иначе - 0
+int s21_is_less_or_equal(s21_decimal num1 , s21_decimal num2) {
+    return s21_is_less(num1, num2) || s21_is_equal(num1, num2) ? 1 : 0;
+}
+
+// Возвращает 1 - если num1 >= num2, иначе - 0
+int s21_is_greater_or_equal(s21_decimal num1 , s21_decimal num2) {
+    return s21_is_greater(num1, num2) || s21_is_equal(num1, num2) ? 1 : 0;
+}
+
+// Возвращает 1 - если num1 != num2, иначе - 0
+int s21_is_not_equal(s21_decimal num1, s21_decimal num2) {
+    return s21_is_less(num1, num2) || s21_is_greater(num1, num2) ? 1 : 0;
 }
 

@@ -25,3 +25,5 @@ int s21_is_less(s21_decimal num1, s21_decimal num2);
 void s21_set_bit(s21_decimal* number, int byte, int n);
 int s21_is_greater(s21_decimal num1, s21_decimal num2);
 int s21_is_less(s21_decimal num1, s21_decimal num2);
+int s21_is_equal(s21_decimal num1, s21_decimal num2);
+int s21_is_less_or_equal(s21_decimal num1 , s21_decimal num2);
