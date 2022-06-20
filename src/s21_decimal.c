@@ -34,10 +34,10 @@ int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
 
 // Умножает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
 int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
-    int n = 0;
-    int tmp = 0;
+    s21_decimal tmp = {0,0,0,0};
     s21_decimal_init(&result);
-    while (n < 96) {
+    // скейлы будут складываться, числа умножаться друг на друга
+    for (int n = 0; n < 96; n++) {
         
     }
     return 0;
