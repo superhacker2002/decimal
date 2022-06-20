@@ -7,7 +7,7 @@ int main() {
     // s21_decimal res;
     s21_from_int_to_decimal(-2, &num1);
     s21_from_int_to_decimal(-3, &num2);
-    printf(s21_is_greater(num1, num2) ? "bolshe" : "net");
+    printf(s21_is_less(num1, num2) ? "menshe" : "net");
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -153,10 +153,18 @@ int s21_is_less(s21_decimal num1, s21_decimal num2) {
         int n = 95;
         while (n >= 0) {
             if (s21_get_bit(num1, n) < s21_get_bit(num2, n)) {
+                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+                    result = 0;
+                } else {
                 result = 1;
+                }
                 break;
             } else if (s21_get_bit(num1, n) > s21_get_bit(num2, n)) {
+                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+                    result = 1;
+                } else {
                 result = 0;
+                }
                 break;
             } else {
                 n--;
@@ -178,10 +186,18 @@ int s21_is_greater(s21_decimal num1, s21_decimal num2) {
         int n = 95;
         while (n >= 0) {
             if (s21_get_bit(num1, n) > s21_get_bit(num2, n)) {
-                result = 1;
+                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+                    result = 0;
+                } else {
+                    result = 1;
+                }
                 break;
             } else if (s21_get_bit(num1, n) < s21_get_bit(num2, n)) {
-                result = 0;
+                if (s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
+                    result = 1;
+                } else {
+                    result = 0;
+                }
                 break;
             } else {
                 n--;
