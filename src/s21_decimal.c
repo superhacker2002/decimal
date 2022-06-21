@@ -2,12 +2,19 @@
 // bits[0] - 
 
 int main() {
-    s21_decimal num1 = {1,0,0,0};
-    s21_decimal num2 = {1,0,0,0};
-    // s21_decimal res;
-    s21_from_int_to_decimal(101, &num1);
-    s21_from_int_to_decimal(100, &num2);
-    printf(s21_is_less_or_equal(num1, num2) ? "menshe ili ravni" : "net");
+    s21_decimal num1 = {{0,0,0,0}};
+    s21_decimal num2 = {{0,0,0,0}};
+    s21_from_int_to_decimal(-2, &num1);
+    s21_from_int_to_decimal(-3, &num2);
+    s21_decimal res;
+    s21_mul(num1, num2, &res);
+    print_decimal(num1);
+    printf("\n");
+    print_decimal(res);
+    // s21_from_int_to_decimal(101, &num1);
+    // s21_from_int_to_decimal(100, &num2);
+    
+    // printf(s21_is_less_or_equal(num1, num2) ? "menshe ili ravni" : "net");
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -34,11 +41,45 @@ int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
 
 // Умножает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
 int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
-    s21_decimal tmp = {0,0,0,0};
-    s21_decimal_init(&result);
+    s21_decimal tmp = {{0,0,0,0}};
+    s21_decimal_init(result);
     // скейлы будут складываться, числа умножаться друг на друга
-    for (int n = 0; n < 96; n++) {
-        
+    for (int n = 16, tmp = 0; n <= 23; n++) {  // суммируем скейлы
+        int bits = s21_get_bit(value_1, n) + s21_get_bit(value_2, n) + tmp;
+        if (bits == 1) {
+            s21_set_bit(result, n, 1);
+            tmp = 0;
+        } else if (bits == 2) {
+            tmp = 1;
+        } else if (bits == 3) {
+            s21_set_bit(result, n, 1);
+            tmp = 1;
+        }
+    }
+
+    for (int n = 0; n < 96; n++) {  // умножаем числа
+        s21_decimal_init(&tmp);
+        if (s21_get_bit(value_2, n)) {
+            tmp.bits[0] = value_1.bits[0] & s21_int_max;
+            tmp.bits[1] = value_1.bits[1] & s21_int_max;
+            tmp.bits[2] = value_1.bits[2] & s21_int_max;
+        } else {
+            tmp.bits[0] = value_1.bits[0] & 0;
+            tmp.bits[1] = value_1.bits[1] & 0;
+            tmp.bits[2] = value_1.bits[2] & 0;
+        }
+        tmp.bits[0] <<= n;
+        tmp.bits[1] <<= n;
+        tmp.bits[2] <<= n;
+        s21_add(*result, tmp, result);
+    }
+
+    if (s21_get_bit(value_1, 127) && s21_get_bit(value_2, 127)) {  // if val1 < 0 && val2 < 0 -> +res
+        s21_set_bit(result, 127, 0);
+    } else if (s21_get_bit(value_1, 127) && !s21_get_bit(value_2, 127)) {  // if val1 < 0 && val2 > 0 -> -res
+        s21_set_bit(result, 127, 1);
+    } else if (!s21_get_bit(value_1, 127) && s21_get_bit(value_2, 127)) {  // if val1 > 0 && val2 < 0 -> -res
+        s21_set_bit(result, 127, 1);
     }
     return 0;
 }
@@ -78,15 +119,15 @@ void print_decimal(s21_decimal number) {
     }
 }
 
-void get_decimal(s21_decimal* num, char* nums) {
-    for (int i = 0, j = strlen(nums); i <= strlen(nums); i++, j--) {
-        if (nums[i] == '0') {
-            s21_set_bit(num, j, 0);
-        } else if (nums[i] == '1') {
-            s21_set_bit(num, j, 1);
-        }
-    }
-}
+// void get_decimal(s21_decimal* num, char* nums) {
+//     for (int i = 0, j = strlen(nums); i <= strlen(nums); i++, j--) {
+//         if (nums[i] == '0') {
+//             s21_set_bit(num, j, 0);
+//         } else if (nums[i] == '1') {
+//             s21_set_bit(num, j, 1);
+//         }
+//     }
+// }
 
 //  конвертация из int в s21_decimal. Возвращает 0 при успехе и 1 при ошибке
 int s21_from_int_to_decimal(int src, s21_decimal *dst) {
@@ -109,29 +150,29 @@ int s21_from_int_to_decimal(int src, s21_decimal *dst) {
 }
 
 //  конвертация из float в s21_decimal. Возвращает 0 при успехе и 1 при ошибке
-int s21_from_float_to_decimal(float src, s21_decimal *dst) {
-    int res = 0;
-    // if (dst) {
-    //     int scale = 0;  // будущий показатель степени в decimal
-    //     /*
-    //         пока src не станет целым числом или scale не привысит 28
-    //         умножаем src на 10 и scale++. Для того чтобы не записывать лишний мусор числа 
-    //         с плавающей точкой - ограничиваем scale до 28
-    //     */
-    //     if (src < 0) {
-    //         src*= -1;
-    //         s21_set_bit(dst, 127, 1);
-    //     }
-    //     for (; src != (int)src && scale <= 28; src *=10, scale++) {;} 
-    //     int n = 0;
-    //     while (n < 64) {
-    //         if ((int)src&1<<n) 
-    //     }
-    // } else {
-    //     res = 1;
-    // }
-    return res;
-}
+// int s21_from_float_to_decimal(float src, s21_decimal *dst) {
+//     int res = 0;
+//     // if (dst) {
+//     //     int scale = 0;  // будущий показатель степени в decimal
+//     //     /*
+//     //         пока src не станет целым числом или scale не привысит 28
+//     //         умножаем src на 10 и scale++. Для того чтобы не записывать лишний мусор числа 
+//     //         с плавающей точкой - ограничиваем scale до 28
+//     //     */
+//     //     if (src < 0) {
+//     //         src*= -1;
+//     //         s21_set_bit(dst, 127, 1);
+//     //     }
+//     //     for (; src != (int)src && scale <= 28; src *=10, scale++) {;} 
+//     //     int n = 0;
+//     //     while (n < 64) {
+//     //         if ((int)src&1<<n) 
+//     //     }
+//     // } else {
+//     //     res = 1;
+//     // }
+//     return res;
+// }
 
 void s21_decimal_init(s21_decimal* num) {
     num->bits[0] = 0;
