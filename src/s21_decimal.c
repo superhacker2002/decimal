@@ -1,16 +1,17 @@
 #include "s21_decimal.h"
+#include <float.h>
 // bits[0] - 
 
 int main() {
     s21_decimal num1 = {{0,0,0,0}};
     s21_decimal num2 = {{0,0,0,0}};
-    s21_from_int_to_decimal(-2, &num1);
-    s21_from_int_to_decimal(-3, &num2);
-    s21_decimal res;
-    s21_mul(num1, num2, &res);
-    print_decimal(num1);
-    printf("\n");
-    print_decimal(res);
+    // s21_from_int_to_decimal(3, &num1);
+    // s21_from_int_to_decimal(1, &num2);
+    float fl = 64654654654.456;
+    s21_from_float_to_decimal(fl, &num1);
+    // s21_decimal res;
+    // s21_add(num1, num2, &res);
+    // print_decimal(res);
     // s21_from_int_to_decimal(101, &num1);
     // s21_from_int_to_decimal(100, &num2);
     
@@ -19,11 +20,27 @@ int main() {
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
 int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
-    int n = 0; // итератор для битов чисел
-    int tmp = 0; // в уме
     s21_decimal_init(result);
+    if (s21_get_bit(value_1, 127) && s21_get_bit(value_2, 127)) {  // -x + (-y)
+        s21_set_bit(&value_1, 127, 0);
+        s21_set_bit(&value_2, 127, 0);
+        s21_helping_add(value_1, value_2, result);
+        s21_set_bit(result, 127, 1);
+    } else if (s21_get_bit(value_1, 127) && !s21_get_bit(value_2, 127)) {  // -x + y
+        s21_sub(value_2, value_1, result);
+    } else if (!s21_get_bit(value_1, 127) && s21_get_bit(value_2, 127)) {  // x + (-y)
+        s21_set_bit(&value_2, 127, 0);
+        s21_sub(value_1, value_2, result);
+    } else if (!s21_get_bit(value_1, 127) && !s21_get_bit(value_2, 127)) {  // x + y
+        s21_helping_add(value_1, value_2, result);
+    }
+    return 0;
+}
+
+int s21_helping_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    int n = 0;
+    int tmp = 0;
     while(n < 96) {
-        // if (s21_equals_intmax(result->bits[i])) i++;
         int bits = s21_get_bit(value_1, n) + s21_get_bit(value_2, n) + tmp;
         if (bits == 1) {
             s21_shift_left(result, 1, n);  // сдвигаем нный байт на противоложный, то бишь на 1
@@ -36,7 +53,6 @@ int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
         }
         n++;
     }
-    return 0;
 }
 
 // Умножает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -293,3 +309,70 @@ int s21_is_not_equal(s21_decimal num1, s21_decimal num2) {
     return s21_is_less(num1, num2) || s21_is_greater(num1, num2) ? 1 : 0;
 }
 
+// Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
+int s21_sub(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    if (s21_is_less(value_1, value_2)) { // если x < y
+        if (s21_get_bit(value_1, 127) == 1 && s21_get_bit(value_2, 127) == 1) {  // если -x - (-y) -> -3 - (-1) -> 3 - 1  и "-")
+            s21_set_bit(&value_1, 127, 0);
+            s21_set_bit(&value_2, 127, 0);
+            s21_sub_res(value_1, value_2, result);
+            s21_set_bit(result, 127, 1);
+        } else if (s21_get_bit(value_1, 127) == 1 && s21_get_bit(value_2, 127) == 0)  { // если -х - (y) -> -3 - 1 -> "-" 3 + 1  complete!
+            s21_add(value_1, value_2, result);
+            s21_set_bit(result, 127, 1);
+        } else if (s21_get_bit(value_1, 127) == 0 && s21_get_bit(value_2, 127) == 0) {  // если х - у complete!
+            s21_sub_res(value_2, value_1, result);
+            s21_set_bit(result, 127, 1);
+        }
+    } else if (s21_is_greater(value_1, value_2)) { // если х > у
+        if (s21_get_bit(value_1, 127) == 1 && s21_get_bit(value_2, 127) == 1) {  // если -x - (-y) (-1) - (-3)  -> 3 - 1 ) complete!
+            s21_set_bit(&value_1, 127, 0);
+            s21_set_bit(&value_2, 127, 0);
+            s21_sub_res(value_2, value_1, result);
+        } else if (s21_get_bit(value_1, 127) == 0 && s21_get_bit(value_2, 127) == 1) {  // если x - (-y) (19 - (-11) ) complete!
+            s21_add(value_1, value_2, result);
+        } else if (s21_get_bit(value_1, 127) == 0 && s21_get_bit(value_2, 127) == 0) {  // если х - у complete!
+            s21_sub_res(value_1, value_2, result);
+        }
+    } else {;}
+    return 0;
+}
+
+int s21_sub_res(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    s21_decimal_init(result);
+    int i = 0;
+    int tmp = 0;
+        while (i < 96) {
+            int bits = s21_get_bit(value_1, i) - tmp - s21_get_bit(value_2, i); // 1 - 0 - 1
+            if (bits == 1) {
+                s21_shift_left(result, 1, i);
+                tmp = 0;
+            } else if (bits == -1) {
+                s21_shift_left(result, 1, i);
+                tmp = 1;
+            } else if (bits == 0) {
+                tmp = 0;
+            }
+            i++;
+        }
+    return 0;
+}
+
+int s21_from_float_to_decimal(float src, s21_decimal *dst) {
+    char* array = malloc(sizeof(char) * 130);
+    from_float_to_string(src, array);
+    for (int i = 0; i < 130; i++) {
+        if (array[i] == 1) printf("1");
+        else printf("0");
+        if (i == 32 || i == 64 || i == 96) printf(" ");
+    }
+    return 0;
+}
+
+void from_float_to_string(float src, char* float_bin_buff) {
+    unsigned int fbits = *((unsigned int *)&src);
+    for (unsigned int mask = 0x80000000; mask; mask >>= 1) { // max uint; mask != 0; mask 
+        *float_bin_buff = !!(fbits & mask); // кладем в значение float_bin_buf =
+        float_bin_buff++;
+    }
+}
