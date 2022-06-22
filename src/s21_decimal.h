@@ -2,8 +2,7 @@
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
-
-#define s21_int_max 4294967295
+#include <math.h>
 
 #define number_is_ok 0
 #define number_is_plus_inf 1
@@ -37,3 +36,9 @@ int s21_sub(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
 int s21_helping_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
 int s21_from_float_to_decimal(float src, s21_decimal *dst);
 void from_float_to_string(float src, char* float_bin_buff);
+void int_set_bit(int* number, int byte, int n);
+int int_get_bit(int number, int byte);
+void int_shift_left(int* num, int shift, int n);
+void float_normalising (float* num, int* scale);
+void mul_by_10(s21_decimal* num);
+void s21_set_scale (s21_decimal* num, int scale);
