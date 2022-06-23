@@ -4,12 +4,23 @@
 
 int main() {
     s21_decimal num1 = {{0,0,0,0}};
-    // s21_decimal num2 = {{0,0,0,0}};
+    s21_decimal num2 = {{0,0,0,0}};
     s21_decimal res;
-    s21_from_float_to_decimal(-7.25, &num1);
-    s21_negate(num1, &res);
+    s21_from_float_to_decimal(7.543, &num1);
+    s21_from_float_to_decimal(2.156, &num2);
     print_decimal(num1);
-    print_decimal(res);
+    print_decimal(num2);
+    s21_set_equal_scale(&num1, &num2);
+    print_decimal(num1);
+    print_decimal(num2);
+    // printf("%d", get_scale(num1));
+    // for (int i = 0; i < 100; i++) {
+    //     s21_mul(num1, res, &res);
+    //     print_decimal(res);
+    // }
+    // printf("==========final=======\n");
+    // print_decimal(res);
+    // print_decimal(res);
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -150,7 +161,7 @@ void print_decimal(s21_decimal number) {
 //  конвертация из int в s21_decimal. Возвращает 0 при успехе и 1 при ошибке
 int s21_from_int_to_decimal(int src, s21_decimal *dst) {
     int res = 0;
-    if (dst != NULL) {
+    if (dst) {
         s21_decimal_init(dst);  // зануляем число, чтобы избежать ошибок 
         if (src&1<<31) {  // if src < 0, dst.bits[3][31] = 1
             s21_set_bit(dst, 127, 1);
@@ -175,27 +186,32 @@ void s21_decimal_init(s21_decimal* num) {
 }
 
 void s21_set_equal_scale(s21_decimal* num1, s21_decimal* num2) {
-    int n = 16;
-    int scale_equal_flag = 1;  // equals
-    while (n <= 23 || scale_equal_flag == 1) {  // проверяем равны ли scale у двух чисел
-        if (s21_get_bit(*num1, n) != s21_get_bit(*num2, n)) scale_equal_flag = 0;  // not equals
-        n++;
-    }
-    if (!scale_equal_flag) {
-        
+    int scale_1 = get_scale(*num1), scale2 = get_scale(*num2);
+    int scale_diff;
+    if (scale_1 > scale2) {
+        scale_diff = scale_1 - scale2;
+        s21_set_scale(num1, scale2);
+        for (; scale_diff > 0; scale_diff--) {
+            mul_by_10(num1);
+        }
+    } else if (scale2 > scale_1) {
+        scale_diff = scale2 - scale_1;
+        s21_set_scale(num1, scale_1);
+        for (; scale_diff > 0; scale_diff--) {
+            mul_by_10(num2);
+        }
     }
 }
 
 // проверяет что число num1 меньше чем число num2. Возвращает 1 - TRUE, 0 - FALSE.
 int s21_is_less(s21_decimal num1, s21_decimal num2) {
-    //s21_set_equal_scale(&num1, &num2); // приравнием скейл чисел, что проверять только bits[0-2]
     int result = 0;
     if (s21_get_bit(num1, 127) && !s21_get_bit(num2, 127)) {  // если num1 отрицательное, а num2 положительное
         result = 1;
     } else if (!s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
         result = 0;
     } else {
-
+        s21_set_equal_scale(&num1, &num2); // приравнием скейл чисел, что проверять только bits[0-2]
         int n = 95;
         while (n >= 0) {
             if (s21_get_bit(num1, n) < s21_get_bit(num2, n)) {
@@ -222,13 +238,13 @@ int s21_is_less(s21_decimal num1, s21_decimal num2) {
 
 // проверяет что число num1 больше чем число num2. Возвращает 1 - TRUE, 0 - FALSE.
 int s21_is_greater(s21_decimal num1, s21_decimal num2) {
-    //s21_set_equal_scale(&num1, &num2); // приравнием скейл чисел, что проверять только bits[0-2]
     int result = 0;
     if (s21_get_bit(num1, 127) && !s21_get_bit(num2, 127)) {  // если num1 отрицательное, а num2 положительное
         result = 0;
     } else if (!s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
         result = 1;
     } else {
+        s21_set_equal_scale(&num1, &num2); // приравнием скейл чисел, что проверять только bits[0-2]
         int n = 95;
         while (n >= 0) {
             if (s21_get_bit(num1, n) > s21_get_bit(num2, n)) {
@@ -255,11 +271,11 @@ int s21_is_greater(s21_decimal num1, s21_decimal num2) {
 
 // Возвращает 1 - если num1 == num2, иначе - 0
 int s21_is_equal(s21_decimal num1, s21_decimal num2) {
-    // s21_set_equal_scale(&num1, &num2);  // приравнять scale 
     int result = 1;
     if (s21_get_bit(num1, 127) != s21_get_bit(num2, 127)) {
         result = 0;
     } else {
+        s21_set_equal_scale(&num1, &num2); // приравнием скейл чисел, что проверять только bits[0-2]
         int n = 0;
         while (n < 96) {
             if (s21_get_bit(num1, n) != s21_get_bit(num2, n)) {
@@ -287,7 +303,7 @@ int s21_is_not_equal(s21_decimal num1, s21_decimal num2) {
     return s21_is_less(num1, num2) || s21_is_greater(num1, num2) ? 1 : 0;
 }
 
-// Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
+// Вычитает value1 из value2, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
 int s21_sub(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
     if (s21_is_less(value_1, value_2)) { // если x < y
         if (s21_get_bit(value_1, 127) == 1 && s21_get_bit(value_2, 127) == 1) {  // если -x - (-y) -> -3 - (-1) -> 3 - 1  и "-")
@@ -455,4 +471,28 @@ int s21_negate(s21_decimal value, s21_decimal *result) {
         res = 1;
     }
     return res;
+}
+
+int s21_div(s21_decimal value1, s21_decimal value2, s21_decimal* result) {
+    int mask = 1;
+    s21_decimal_init(result);
+    s21_decimal tmp = {{0,0,0,0}};
+    
+}
+
+int get_higher_bit (s21_decimal value) {
+    int i = 95;
+    for (; i >= 0; i--) {
+        if (s21_get_bit(value, i)) {
+            break;
+        }
+    }
+    return i;
+}
+
+int get_scale(s21_decimal value) {
+    int mask = 0b00000000011111111000000000000000;
+    int scale = value.bits[3] & mask;
+    scale >>= 16;
+    return scale;
 }

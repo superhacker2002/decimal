@@ -43,3 +43,7 @@ void float_normalising (float* num, int* scale);
 void mul_by_10(s21_decimal* num);
 void s21_set_scale (s21_decimal* num, int scale);
 int s21_negate(s21_decimal value, s21_decimal *result);
+int get_higher_bit (s21_decimal value);
+int get_scale(s21_decimal value);
+void s21_set_equal_scale(s21_decimal* num1, s21_decimal* num2);
+void s21_set_scale (s21_decimal* num, int scale);
