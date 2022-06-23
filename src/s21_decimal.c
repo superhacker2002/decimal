@@ -4,17 +4,12 @@
 
 int main() {
     s21_decimal num1 = {{0,0,0,0}};
-    // s21_from_int_to_decimal(3, &num1);
-    // s21_from_int_to_decimal(1, &num2);
-    float fl = -7.25;
-    s21_from_float_to_decimal(fl, &num1);
-    // s21_decimal res;
-    // s21_add(num1, num2, &res);
+    // s21_decimal num2 = {{0,0,0,0}};
+    s21_decimal res;
+    s21_from_float_to_decimal(-7.25, &num1);
+    s21_negate(num1, &res);
     print_decimal(num1);
-    // s21_from_int_to_decimal(101, &num1);
-    // s21_from_int_to_decimal(100, &num2);
-    
-    // printf(s21_is_less_or_equal(num1, num2) ? "menshe ili ravni" : "net");
+    print_decimal(res);
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -60,18 +55,6 @@ int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
     s21_decimal tmp = {{0,0,0,0}};
     s21_decimal_init(result);
     // скейлы будут складываться, числа умножаться друг на друга
-    for (int n = 112, tmp = 0; n <= 119; n++) {  // суммируем скейлы
-        int bits = s21_get_bit(value_1, n) + s21_get_bit(value_2, n) + tmp;
-        if (bits == 1) {
-            s21_set_bit(result, n, 1);
-            tmp = 0;
-        } else if (bits == 2) {
-            tmp = 1;
-        } else if (bits == 3) {
-            s21_set_bit(result, n, 1);
-            tmp = 1;
-        }
-    }
 
     for (int n = 0; n < 96; n++) {  // умножаем числа
         s21_decimal_init(&tmp);
@@ -88,6 +71,19 @@ int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
         tmp.bits[1] <<= n;
         tmp.bits[2] <<= n;
         s21_add(*result, tmp, result);
+    }
+
+    for (int n = 112, tmp = 0; n <= 119; n++) {  // суммируем скейлы
+        int bits = s21_get_bit(value_1, n) + s21_get_bit(value_2, n) + tmp;
+        if (bits == 1) {
+            s21_set_bit(result, n, 1);
+            tmp = 0;
+        } else if (bits == 2) {
+            tmp = 1;
+        } else if (bits == 3) {
+            s21_set_bit(result, n, 1);
+            tmp = 1;
+        }
     }
 
     // ставим знак
@@ -143,21 +139,13 @@ void int_shift_left(int* num, int shift, int n) {
 
 //  выводит число в двоичном представлении
 void print_decimal(s21_decimal number) {
+    printf("+/-\t    SCALE\t\t\t\t\tHIGH\t\t\t\tMID\t\t\t\tLOW\n");
     for (int i = 127; i >= 0; i--) {
         printf("%d", s21_get_bit(number, i));
-        if (i == 32 || i == 64 || i == 96) printf(" ");
+        if (i == 32 || i == 64 || i == 96 || i == 112 || i == 120 || i == 127) printf(" ");
     }
+    printf("\n");
 }
-
-// void get_decimal(s21_decimal* num, char* nums) {
-//     for (int i = 0, j = strlen(nums); i <= strlen(nums); i++, j--) {
-//         if (nums[i] == '0') {
-//             s21_set_bit(num, j, 0);
-//         } else if (nums[i] == '1') {
-//             s21_set_bit(num, j, 1);
-//         }
-//     }
-// }
 
 //  конвертация из int в s21_decimal. Возвращает 0 при успехе и 1 при ошибке
 int s21_from_int_to_decimal(int src, s21_decimal *dst) {
@@ -178,31 +166,6 @@ int s21_from_int_to_decimal(int src, s21_decimal *dst) {
     }
     return res;
 }
-
-//  конвертация из float в s21_decimal. Возвращает 0 при успехе и 1 при ошибке
-// int s21_from_float_to_decimal(float src, s21_decimal *dst) {
-//     int res = 0;
-//     // if (dst) {
-//     //     int scale = 0;  // будущий показатель степени в decimal
-//     //     /*
-//     //         пока src не станет целым числом или scale не привысит 28
-//     //         умножаем src на 10 и scale++. Для того чтобы не записывать лишний мусор числа 
-//     //         с плавающей точкой - ограничиваем scale до 28
-//     //     */
-//     //     if (src < 0) {
-//     //         src*= -1;
-//     //         s21_set_bit(dst, 127, 1);
-//     //     }
-//     //     for (; src != (int)src && scale <= 28; src *=10, scale++) {;} 
-//     //     int n = 0;
-//     //     while (n < 64) {
-//     //         if ((int)src&1<<n) 
-//     //     }
-//     // } else {
-//     //     res = 1;
-//     // }
-//     return res;
-// }
 
 void s21_decimal_init(s21_decimal* num) {
     num->bits[0] = 0;
@@ -232,6 +195,7 @@ int s21_is_less(s21_decimal num1, s21_decimal num2) {
     } else if (!s21_get_bit(num1, 127) && s21_get_bit(num2, 127)) {
         result = 0;
     } else {
+
         int n = 95;
         while (n >= 0) {
             if (s21_get_bit(num1, n) < s21_get_bit(num2, n)) {
@@ -380,12 +344,11 @@ int s21_from_float_to_decimal(float src, s21_decimal *dst) {
         converting_res = 1;
     } else {
         s21_decimal_init(dst);
-        float tmp_fl = src;
-        
         // Считываем знак
-        int float_sign = (*(unsigned int*)(&tmp_fl)&1<<31) ? 1 : 0;
+        int float_sign = (*(unsigned int*)(&src)&1<<31) ? 1 : 0;
         //
-
+        if (src < 0) src *= -1;
+        float tmp_fl = src;
         // считываем экспоненту
         int exponent = 0;
         for (int i = 30; i >= 23; i--) {
@@ -435,8 +398,9 @@ int s21_from_float_to_decimal(float src, s21_decimal *dst) {
                 scale--;
             }
 
-            if (remainder > 4)
+            if (remainder > 4) {
                 tmp++;
+            }
 
             while (tmp % 10 == 0) {
                 tmp /= 10;
@@ -448,20 +412,20 @@ int s21_from_float_to_decimal(float src, s21_decimal *dst) {
             while (scale + 7 <= 0) {
                 mul_by_10(dst), scale++;
             }
-            printf("%d\n", scale);
+
             s21_set_bit(dst, 127, float_sign); // устанавливаем знак
-            s21_set_scale(dst, scale); // устанавливаем скейл
+            s21_set_scale(dst, scale + 6); // устанавливаем скейл
         }
     }
     return converting_res;
 }
 
 void float_normalising (float* num, int* scale) {
-    while ((int)*num < 1) {
+    while ((unsigned long int)*num < 1) {
         *num *= 10;
         *scale += 1;
     }
-    while ((int)*num > 10) {
+    while ((unsigned long int)*num > 10) {
         *num /= 10;
         *scale -= 1;
     }
@@ -477,4 +441,18 @@ void s21_set_scale (s21_decimal* num, int scale) {
     num->bits[3] = scale;
     num->bits[3] <<= 16;
     s21_set_bit(num, 127, sign);
+}
+
+int s21_negate(s21_decimal value, s21_decimal *result) {
+    int res = 0;
+    if (result) {
+        s21_decimal_init(result);
+        for (int i = 0; i < 4; i++) 
+            result->bits[i] = value.bits[i];
+        if (s21_get_bit(value, 127) == 1) s21_set_bit(result, 127, 0);
+        else s21_set_bit(result, 127, 1);
+    } else {
+        res = 1;
+    }
+    return res;
 }

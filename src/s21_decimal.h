@@ -42,3 +42,4 @@ void int_shift_left(int* num, int shift, int n);
 void float_normalising (float* num, int* scale);
 void mul_by_10(s21_decimal* num);
 void s21_set_scale (s21_decimal* num, int scale);
+int s21_negate(s21_decimal value, s21_decimal *result);
