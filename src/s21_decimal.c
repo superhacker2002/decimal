@@ -6,8 +6,10 @@ int main() {
     s21_decimal num1 = {{0,0,0,0}};
     s21_decimal num2 = {{0,0,0,0}};
     s21_decimal res;
-    s21_from_float_to_decimal(0.4244238f, &num1);
-    print_decimal(num1);
+    s21_from_float_to_decimal(4.1, &num1);
+    s21_from_float_to_decimal(7.75, &num2);
+    s21_sub(num1, num2, &res);
+    print_decimal(res);
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -117,6 +119,18 @@ void s21_shift_left(s21_decimal* number, int shift, int n) {
     number->bits[byte]^=shift<<n;
 }
 
+void s21_shift_decimal_left (s21_decimal* number) {
+    int low_last_bit = s21_get_bit(*number, 31);
+    int mid_last_bit = s21_get_bit(*number, 63);
+
+    number->bits[0] <<= 1;
+    number->bits[1] <<= 1;
+    number->bits[2] <<= 1;
+
+    s21_set_bit(number, 32, low_last_bit);
+    s21_set_bit(number, 64, mid_last_bit);
+}
+
 //  Сдвигает вправо n-ный байт на shift байтов в числе number
 void s21_shift_right(s21_decimal* number, int shift, int n) {
     int byte = n / 32;
@@ -134,7 +148,7 @@ int int_get_bit(int number, int byte) {
 }
 
 void int_shift_left(int* num, int shift, int n) {
-    *num^=shift>>n;
+    *num^=shift<<n;
 }
 
 //  выводит число в двоичном представлении
@@ -177,24 +191,19 @@ void s21_decimal_init(s21_decimal* num) {
 void s21_set_equal_scale(s21_decimal* num1, s21_decimal* num2) {
     int scale_1 = get_scale(*num1), scale_2 = get_scale(*num2);
     int scale_diff;
-    if (scale_1 > scale_2) {
-        scale_diff = scale_1 - scale_2;
+    if (scale_1 < scale_2) {
+        scale_diff = scale_2 - scale_1; // 2
         s21_set_scale(num1, scale_2);
         for (; scale_diff > 0; scale_diff--) {
             mul_by_10(num1);
         }
-    } else if (scale_2 > scale_1) {
-        scale_diff = scale_2 - scale_1;
+    } else if (scale_1 > scale_2) {
+        scale_diff = scale_1 - scale_2;
         s21_set_scale(num2, scale_1);
         for (; scale_diff > 0; scale_diff--) {
             mul_by_10(num2);
         }
     }
-}
-
-// to do
-void s21_set_lower_scale(s21_decimal* num1, s21_decimal* num2) {
- 
 }
 
 // проверяет что число num1 меньше чем число num2. Возвращает 1 - TRUE, 0 - FALSE.
@@ -299,6 +308,7 @@ int s21_is_not_equal(s21_decimal num1, s21_decimal num2) {
 
 // Вычитает value1 из value2, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
 int s21_sub(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    s21_set_equal_scale(&value_1, &value_2);
     if (s21_is_less(value_1, value_2)) { // если x < y
         if (s21_get_bit(value_1, 127) == 1 && s21_get_bit(value_2, 127) == 1) {  // если -x - (-y) -> -3 - (-1) -> 3 - 1  и "-")
             s21_set_bit(&value_1, 127, 0);
@@ -505,8 +515,34 @@ int get_higher_bit (s21_decimal value) {
 }
 
 int get_scale(s21_decimal value) {
-    int mask = 0b00000000011111111000000000000000;
+    int mask = 0x7F8000;
     int scale = value.bits[3] & mask;
     scale >>= 16;
     return scale;
+}
+
+void s21_div_by_10 (s21_decimal* number) {
+    unsigned int buffer = 0;
+    int scale_of_number = get_scale(*number);
+    s21_decimal result = {{0, 0, 0, 0}};
+    int highest_bit_pos = get_higher_bit(*number);
+    for (int i = 0; i < highest_bit_pos + 2; i++) {
+        if (buffer >= 10) {
+            s21_shift_decimal_left(&result);
+            s21_set_bit(&result, 0, 1);
+            buffer -= 10;
+            int new_bit = s21_get_bit(*number, highest_bit_pos - i);
+            buffer = buffer << 1;
+            int_set_bit(&buffer, 0, new_bit);
+        } else {
+            s21_shift_decimal_left(&result);
+            s21_set_bit(&result, 0, 0);
+            int new_bit = s21_get_bit(*number, highest_bit_pos - i);
+            buffer = buffer << 1;
+            int_set_bit(&buffer, 0, new_bit);
+        }
+    }
+    buffer = buffer << 1;
+    *number = result;
+    s21_set_scale(number, scale_of_number);
 }

@@ -47,3 +47,4 @@ int get_higher_bit (s21_decimal value);
 int get_scale(s21_decimal value);
 void s21_set_equal_scale(s21_decimal* num1, s21_decimal* num2);
 void s21_set_scale (s21_decimal* num, int scale);
+void s21_div_by_10 (s21_decimal* number);
