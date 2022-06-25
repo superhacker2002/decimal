@@ -5,11 +5,11 @@
 int main() {
     s21_decimal num1 = {{0,0,0,0}};
     s21_decimal num2 = {{0,0,0,0}};
-    s21_decimal res;
-    s21_from_float_to_decimal(4.1, &num1);
-    s21_from_float_to_decimal(7.75, &num2);
-    s21_add(num1, num2, &res);
-    print_decimal(res);
+    // s21_decimal res;
+    s21_from_float_to_decimal(70.756876, &num1);
+    int res;
+    s21_from_decimal_to_int(num1, &res);
+    printf("%d", res);
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -584,4 +584,29 @@ void s21_div_by_10 (s21_decimal* number) {
     buffer = buffer << 1;
     *number = result;
     s21_set_scale(number, scale_of_number);
+}
+
+int s21_truncate (s21_decimal value, s21_decimal* result) {
+    int scale = get_scale(value);
+    int sign = s21_get_bit(value, 127);
+
+    for (int i = 0; i < scale; i++) {
+        s21_div_by_10(&value);
+    }
+
+    *result = value;
+    s21_set_bit(result, 127, sign);
+    s21_set_scale(result, 0);
+
+    return 0;
+}
+
+int s21_from_decimal_to_int(s21_decimal src, int *dst) {
+    int sign = s21_get_bit(src, 127);
+    
+    s21_decimal tmp = {{0, 0, 0, 0}};
+    s21_truncate(src, &tmp);
+
+    *dst = tmp.bits[0];
+    if (sign == 1) *dst *= -1;
 }
