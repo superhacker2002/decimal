@@ -3,13 +3,16 @@
 // bits[0] -
 
 int main() {
-    s21_decimal num1 = {{0, 0, 0, 0}};
-    s21_decimal num2 = {{0, 0, 0, 0}};
-    s21_decimal res;
-    s21_from_float_to_decimal(-1.4, &num1);
+    s21_decimal num1 = {{30, 0, 0, 0}};
+    s21_decimal num2 = {{6, 0, 0, 0}};
+    s21_decimal num3 = {{100,0,0,0}};
+    s21_decimal res = {{0,0,0,0}};
+    s21_from_float_to_decimal(0.5688, &num1);
+    s21_from_float_to_decimal(1.486, &num2);
     print_decimal(num1);
-    s21_floor(num1, &num1);
-    print_decimal(num1);
+    print_decimal(num2);
+    s21_div(num1, num2, &res);
+    print_decimal(res);
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -418,87 +421,126 @@ int s21_sub_res(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
 }
 
 //  конвертация из float в s21_decimal. Возвращает 0 при успехе и 1 при ошибке
-// (*(unsigned int*)(&src)&1<<31)
 int s21_from_float_to_decimal(float src, s21_decimal *dst) {
-    int converting_res = 0;
-    if (dst == NULL || !isfinite(src)) {
-        converting_res = 1;
-    } else {
+    // int converting_res = 0;
+    // if (dst == NULL || !isfinite(src)) {
+    //     converting_res = 1;
+    // } else {
+    //     s21_decimal_init(dst);
+    //     // Считываем знак
+    //     int float_sign = (*(unsigned int*)(&src) & 1 << 31) ? 1 : 0;
+    //     //
+    //     if (src < 0) src *= -1;
+    //     float tmp_fl = src;
+    //     // считываем экспоненту
+    //     int exponent = 0;
+    //     for (int i = 30; i >= 23; i--) {
+    //         int bit = (*(unsigned int*)(&tmp_fl) >> i&1);
+    //         exponent = exponent << 1;
+    //         int_set_bit((int *) &exponent, 0, bit);
+    //     }
+    //     exponent -= 127;
+    //     //
+
+    //     // обработка экспоненты и нормализация числа
+    //     if (exponent > 95) {
+    //         converting_res = 1;
+    //     } else if (exponent > -95) {
+    //         int scale = 0;
+    //         float_normalising(&tmp_fl, &scale);
+    //         double result = 1;
+
+    //         // возводим все биты мантиссы в отрицательную степень двойки
+    //         for (int i = 1, j = 22; j >= 0; i++, j--) {
+    //             if ((*(unsigned int*)(&src) & 1 << j))
+    //                 result += pow(2, -i);
+    //         }
+
+    //         // приводим число к 8-9 знакам перед запятой
+    //         result *= pow(2, exponent);
+    //         result *= pow(10, 8 + scale);
+
+    //         if (scale > 0) {
+    //             while (result < 10000000) {
+    //                 result *= 10;
+    //             }
+    //         }
+
+    //         long int tmp = round(result);
+    //         int remainder = 0;
+
+    //         while (tmp >= 10000000) {
+    //             remainder = tmp % 10;
+    //             tmp = round(tmp);
+    //             tmp /= 10;
+    //         }
+
+    //         while (scale + 7 > 29) {
+    //             remainder = tmp % 10;
+    //             tmp /= 10;
+    //             scale--;
+    //         }
+
+    //         if (remainder > 4) {
+    //             tmp++;
+    //         }
+
+    //         while (tmp % 10 == 0) {
+    //             tmp /= 10;
+    //             scale--;
+    //         }
+
+    //         s21_from_int_to_decimal(tmp, dst);
+
+    //         while (scale + 7 <= 0) {
+    //             mul_by_10(dst), scale++;
+    //         }
+
+    //         s21_set_bit(dst, 127, float_sign);  // устанавливаем знак
+    //         s21_set_scale(dst, scale + 6);  // устанавливаем скейл
+    //     }
+    // }
+    // return converting_res;
+
+    int status = 0;
+    if (src == 1 / 0.0 && src == 0 / 0.0 && src == -1 / 0.0 && src == -0 / 0.0)
+        status = 1;
+    s21_decimal_init(dst);
+    if (src != 0) {
         s21_decimal_init(dst);
-        // Считываем знак
-        int float_sign = (*(unsigned int*)(&src) & 1 << 31) ? 1 : 0;
-        //
-        if (src < 0) src *= -1;
-        float tmp_fl = src;
-        // считываем экспоненту
-        int exponent = 0;
-        for (int i = 30; i >= 23; i--) {
-            int bit = (*(unsigned int*)(&tmp_fl) >> i&1);
-            exponent = exponent << 1;
-            int_set_bit((int *) &exponent, 0, bit);
-        }
-        exponent -= 127;
-        //
-
-        // обработка экспоненты и нормализация числа
-        if (exponent > 95) {
-            converting_res = 1;
-        } else if (exponent > -95) {
+        if (dst && !status) {
+            int is_negative = 0;
+            if (src < 0) {
+                is_negative = 1;
+                src *= -1;
+            }
+            double dbl = src;
+            char float_bin_buff[32] = "";
+            getBinaryFromFloat((float)dbl, float_bin_buff);
+            int exp = getScaleFloat(float_bin_buff);
             int scale = 0;
-            float_normalising(&tmp_fl, &scale);
-            double result = 1;
-
-            // возводим все биты мантиссы в отрицательную степень двойки
-            for (int i = 1, j = 22; j >= 0; i++, j--) {
-                if ((*(unsigned int*)(&src) & 1 << j))
-                    result += pow(2, -i);
+            while (scale < 28 && (int)dbl / (int)pow(2, 21) == 0) {
+                dbl *= 10;
+                scale++;
             }
-
-            // приводим число к 8-9 знакам перед запятой
-            result *= pow(2, exponent);
-            result *= pow(10, 8 + scale);
-
-            if (scale > 0) {
-                while (result < 10000000) {
-                    result *= 10;
+            dbl = round(dbl);
+            if (scale <= 28 && (exp > -94 && exp < 96)) {
+                while (fmod(dbl, 10) == 0 && scale > 0) {
+                    dbl = dbl / 10;
+                    scale--;
                 }
+                getBinaryFromFloat((float)dbl, float_bin_buff);
+                exp = getScaleFloat(float_bin_buff);
+                s21_set_bit(dst, exp, 1);
+                writeMantissaToDecimal(dst, float_bin_buff, exp);
+                s21_set_scale(dst, scale);
+                s21_set_bit(dst, 127, is_negative);
+            } else {
+                status = 1;
             }
-
-            long int tmp = round(result);
-            int remainder = 0;
-
-            while (tmp >= 10000000) {
-                remainder = tmp % 10;
-                tmp = round(tmp);
-                tmp /= 10;
-            }
-
-            while (scale + 7 > 29) {
-                remainder = tmp % 10;
-                tmp /= 10;
-                scale--;
-            }
-
-            if (remainder > 4) {
-                tmp++;
-            }
-
-            while (tmp % 10 == 0) {
-                tmp /= 10;
-                scale--;
-            }
-
-            s21_from_int_to_decimal(tmp, dst);
-
-            while (scale + 7 <= 0) {
-                mul_by_10(dst), scale++;
-            }
-
-            s21_set_bit(dst, 127, float_sign);  // устанавливаем знак
-            s21_set_scale(dst, scale + 6);  // устанавливаем скейл
         }
     }
-    return converting_res;
+    return status;
 }
 
 void float_normalising(float* num, int* scale) {
@@ -550,40 +592,35 @@ int equals_zero(s21_decimal value) {
 // 2 - число слишком мало или равно отрицательной бесконечности
 // 3 - деление на 0
 
-int s21_div(s21_decimal value1, s21_decimal value2, s21_decimal* result) {
-    int div_res = 0;
-    if (equals_zero(value1) && equals_zero(value2)) {
-        div_res = 3;
-    } else if (equals_zero(value2)) {
-        int sign1 = s21_get_bit(value1, 127);
-        int sign2 = s21_get_bit(value2, 127);
-        div_res = sign1 + sign2 == 0 ? 1 : sign1 + sign2 == 1 ? 2 : 1;
-    } else {
+int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    int status = 0;
+    int sign1 = s21_get_bit(value_1, 127);
+    int sign2 = s21_get_bit(value_2, 127);
+
+    if (equals_zero(value_2) == 1) {
+        status = 3;
+    } else if (equals_zero(value_1) == 1) {
         s21_decimal_init(result);
-        s21_decimal mask = {{1, 0, 0, 0}};
-        int higher_bit = get_higher_bit(value1);
-        s21_decimal tmp = {{0, 0, 0, 0}};
-        int i = 1;
-        int j = higher_bit;
-        while (s21_is_less(tmp, value2)) {
-            for (int n = 0; n < j; n++) {  // получаем нужную маску
-               s21_shift_decimal_left(&mask);
+    } else {
+        s21_set_equal_scale(&value_1, &value_2);
+        if (equals_zero(value_1) == 1) {
+            status = 2;
+        } else if (equals_zero(value_2) == 1) {
+            status = 1;
+            if (sign1 != sign2) {
+                status = 2;
             }
-
-            tmp.bits[0] = value1.bits[0] & mask.bits[0];  // получаем tmp переменную которую
-            tmp.bits[1] = value1.bits[1] & mask.bits[1];  // нужно сдвинуть до младших битов для
-            tmp.bits[2] = value1.bits[2] & mask.bits[2];  // сравнения с value2
-
-            for (int n = 0; n < j; n++) {  // сдвигаем tmp для сравнения
-               s21_shift_decimal_right(&tmp);
+        } else {
+            div_processing(&value_1, &value_2, result);
+            if (equals_zero(*result) == 1) {
+                status = 2;
             }
-
-            i += 2;  // итерация
-            j--;
-            s21_from_int_to_decimal(i, &mask);
+        }
+        if (sign1 != sign2) {
+            s21_set_bit(result, 127, 1);
         }
     }
-    return div_res;
+    return status;
 }
 
 int get_higher_bit(s21_decimal value) {
@@ -647,7 +684,7 @@ int s21_truncate(s21_decimal value, s21_decimal* result) {
 
 int s21_from_decimal_to_int(s21_decimal src, int *dst) {
     int res = 0;
-    if (src.bits[1] == 0 && src.bits[2] == 0) {
+    if (src.bits[1] == 0 && src.bits[2] == 0 && !s21_get_bit(src, 31)) {
         *dst = 0;  // avoiding errors
         int sign = s21_get_bit(src, 127);
         s21_decimal tmp = {{0, 0, 0, 0}};
@@ -693,4 +730,199 @@ int s21_floor(s21_decimal value, s21_decimal *result) {
         s21_sub(*result, one, result);
     }
     return 0;
+}
+
+int s21_from_decimal_to_float(s21_decimal src, float *dst) {
+    int ret = 0;
+    if (!dst || get_scale(src) > 28) {
+        ret = 1;
+    } else {
+        *dst = 0.0;
+        int scale = get_scale(src);
+        int last_bit = s21_get_bit(src, 127);
+        int sign = s21_get_bit(src, 127);
+        if (sign) s21_set_bit(&src, 127, 1);
+        s21_set_scale(&src, scale);
+        double tmp = *dst;
+        if (last_bit == 1) s21_set_bit(&src, 127, 1);
+        unsigned long base = 1;
+        for (int i = 0; i < 96; i++) {
+            tmp += s21_get_bit(src, i) * base;
+            base = base * 2;
+        }
+        while (scale != 0) {
+            tmp = tmp / 10;
+            scale--;
+        }
+        if (s21_get_bit(src, 127)) tmp *= -1;
+        *dst = tmp;
+    }
+    return ret;
+}
+
+void div_processing(s21_decimal *value_1, s21_decimal *value_2,
+                  s21_decimal *result) {
+    s21_decimal minuend, resultOfDevide;
+    int i, j, status_of_mul;
+    int firstCycle = 0;
+    s21_decimal ten = {{10, 0, 0, 0}};
+    int wholeNumber = 0;
+
+    do {
+        status_of_mul = 0;
+        s21_decimal_init(&minuend);
+        s21_decimal_init(&resultOfDevide);
+        if (s21_is_less(*value_1, *value_2)) {
+            minuend = *value_1;
+            i = -1;
+            if (firstCycle == 1) {
+                wholeNumber--;
+            }
+        } else {
+            i = initDecimalMinuend(&minuend, *value_1, *value_2);
+        }
+
+        j = 95;
+        int check = 0;
+        for (; j >= 0 && check == 0; i--, j--) {
+            if (s21_is_greater_or_equal(minuend, *value_2)) {
+                s21_set_bit(&resultOfDevide, j, 1);
+                s21_sub_res(minuend, *value_2, &minuend);
+                if (i >= 0) {
+                    s21_shift_decimal_left(&minuend);
+                    s21_set_bit(&minuend, 0, s21_get_bit(*value_1, i));
+                }
+            } else {
+                s21_set_bit(&resultOfDevide, j, 0);
+                if (i >= 0) {
+                    s21_shift_decimal_left(&minuend);
+                    s21_set_bit(&minuend, 0, s21_get_bit(*value_1, i));
+                }
+            }
+            if (s21_is_less(minuend, *value_2) && i == -1 && firstCycle == 0) {
+                check = 1;
+                if (equals_zero(resultOfDevide) != 1) {
+                    s21_decimal_init(result);
+                    int tmp = 95;
+                    for (int k = 95 - j; k >= 0; k--, tmp--) {
+                        s21_set_bit(result, k, s21_get_bit(resultOfDevide, tmp));
+                    }
+                    wholeNumber = sizeOfNumber(*result);
+                    s21_decimal_init(result);
+                }
+                firstCycle = 1;
+            }
+            if (s21_is_less(minuend, *value_2) && i == -1 && firstCycle == 1) {
+                check = 1;
+            }
+        }
+        status_of_mul = s21_mul(*value_1, ten, value_1);
+    } while (equals_zero(minuend) != 1 && status_of_mul == 0);
+    s21_decimal_init(result);
+    int tmp = 95;
+    for (i = 94 - j; i >= 0; i--, tmp--) {
+        s21_set_bit(result, i, s21_get_bit(resultOfDevide, tmp));
+    }
+    int fractionNumber = sizeOfNumber(*result);
+    int Scale = fractionNumber - wholeNumber;
+    s21_set_scale(result, Scale);
+}
+
+int initDecimalMinuend(s21_decimal *minuend, s21_decimal value_1,
+                       s21_decimal value_2) {
+    int i = get_higher_bit(value_1);
+    s21_decimal tmp_minuend = *minuend;
+    s21_decimal_init(&tmp_minuend);
+    while (s21_is_less(tmp_minuend, value_2)) {
+        s21_shift_decimal_left(&tmp_minuend);
+        s21_set_bit(&tmp_minuend, 0, s21_get_bit(value_1, i));
+        i--;
+    }
+    *minuend = tmp_minuend;
+    return i;
+}
+
+int sizeOfNumber(s21_decimal d) {
+    s21_decimal resultOfDevide;
+    unsigned int minuend;
+    int size = 0;
+
+    while (equals_zero(d) != 1) {
+        s21_decimal_init(&resultOfDevide);
+        int begin = get_higher_bit(d);
+
+        minuend = 0;
+        initMinuend(&minuend, d, begin);
+        int i = 95;
+        int check = 0;
+
+        for (int j = begin - 3; j >= 0 && check == 0; j--, i--) {
+            if (minuend >= 10u) {
+                s21_set_bit(&resultOfDevide, i, 1);
+                minuend -= 10u;
+                minuend <<= 1;
+                int_set_bit(&minuend, 0, s21_get_bit(d, j - 1));
+            } else {
+                s21_set_bit(&resultOfDevide, i, 0);
+                minuend <<= 1;
+                if (j != 0) {
+                    int_set_bit(&minuend, 0, s21_get_bit(d, j - 1));
+                }
+            }
+            if (minuend < 10u && j == 0) {
+                check = 1;
+            }
+        }
+        s21_decimal_init(&d);
+        int tmp = 95;
+        for (int j = 94 - i; j >= 0; j--, tmp--) {
+            s21_set_bit(&d, j, s21_get_bit(resultOfDevide, tmp));
+        }
+        size++;
+    }
+    return size;
+}
+
+void initMinuend(unsigned int *minuend, s21_decimal d, int begin) {
+    int i = 3;
+    for (int j = 0; i >= 0; j++, i--) {
+        int_set_bit(minuend, j, s21_get_bit(d, begin - i));
+    }
+}
+
+int s21_mod(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    int res = 0;
+    s21_decimal div_res;
+    if (res = s21_div(value_1, value_2, &div_res) == 0) {
+        s21_truncate(div_res, &div_res);  // 332
+        s21_mul(div_res, value_2, &div_res);  // 664
+        s21_sub(value_1, div_res, result);
+    } else {
+        res = 1;
+    }
+    return res;
+}
+
+void getBinaryFromFloat(float src, char *float_bin_buff) {
+    union float_value float_number_bits;
+    float_number_bits.float_view = src;
+    for (unsigned int mask = 0x80000000; mask; mask >>= 1) {
+        *float_bin_buff = !!(float_number_bits.int_view & mask);
+        float_bin_buff++;
+    }
+}
+
+int getScaleFloat(const char *src) {
+    int result = 0, base = 1;
+    for (int i = 8; i > 0; i--) {
+        result += src[i] * base;
+        base = base * 2;
+    }
+    return (result - 127);
+}
+
+void writeMantissaToDecimal(s21_decimal *d, char *float_bin_buff, int exp) {
+    for (int i = exp - 1, j = 9; i >= 0 && j < 32; i--, j++) {
+        if (float_bin_buff[j]) s21_set_bit(d, i, 1);
+    }
 }
