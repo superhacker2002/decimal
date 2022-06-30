@@ -2,18 +2,16 @@
 #include <float.h>
 // bits[0] -
 
-int main() {
-    s21_decimal num1 = {{30, 0, 0, 0}};
-    s21_decimal num2 = {{6, 0, 0, 0}};
-    s21_decimal num3 = {{100,0,0,0}};
-    s21_decimal res = {{0,0,0,0}};
-    s21_from_float_to_decimal(0.5688, &num1);
-    s21_from_float_to_decimal(1.486, &num2);
-    print_decimal(num1);
-    print_decimal(num2);
-    s21_div(num1, num2, &res);
-    print_decimal(res);
-}
+// int main() {
+//     s21_decimal num1 = {{30, 0, 0, 0}};
+//     s21_decimal num2 = {{6, 0, 0, 0}};
+//     s21_decimal num3 = {{100,0,0,0}};
+//     s21_decimal res = {{0,0,0,0}};
+//     s21_from_float_to_decimal(0.5688, &num1);
+//     s21_from_float_to_decimal(1.486, &num2);
+//     print_decimal(num1);
+//     print_decimal(num2);
+// }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
 // 1 inf, 2 -inf
@@ -27,6 +25,7 @@ int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
         if (s21_helping_add(value_1, value_2, result) == 1) res = 2;
         s21_set_bit(result, 127, 1);
     } else if (s21_get_bit(value_1, 127) && !s21_get_bit(value_2, 127)) {  // -x + y
+        s21_set_bit(&value_1, 127, 0);
         s21_sub(value_2, value_1, result);
     } else if (!s21_get_bit(value_1, 127) && s21_get_bit(value_2, 127)) {  // x + (-y)
         s21_set_bit(&value_2, 127, 0);
@@ -64,11 +63,14 @@ int s21_helping_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *resul
 
 // Умножает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
 int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    int mul_res = 0;
     s21_decimal tmp = {{0, 0, 0, 0}};
     s21_decimal_init(result);
+    int sign1 = s21_get_bit(value_1, 127), sign2 = s21_get_bit(value_2, 127);
+    int scale1 = get_scale(value_1), scale2 = get_scale(value_2);
     // скейлы будут складываться, числа умножаться друг на друга
 
-    for (int n = 0; n < 96; n++) {  // умножаем числа
+    for (int n = 0; n < 96 && mul_res == 0; n++) {  // умножаем числа
         s21_decimal_init(&tmp);
         if (s21_get_bit(value_2, n)) {
             tmp.bits[0] = value_1.bits[0] & 0xFFFFFFFF;
@@ -81,20 +83,26 @@ int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
         }
         for (int i = 0; i < n; i++)
             s21_shift_decimal_left(&tmp);
-        s21_add(*result, tmp, result);
+        if (s21_add(*result, tmp, result)) {
+            mul_res = sign1 + sign2 == 0 ? 1 : sign1 + sign2 == 1 ? 2 : 1; 
+        }
     }
 
-    for (int n = 112, tmp = 0; n <= 119; n++) {  // суммируем скейлы
-        int bits = s21_get_bit(value_1, n) + s21_get_bit(value_2, n) + tmp;
-        if (bits == 1) {
-            s21_set_bit(result, n, 1);
-            tmp = 0;
-        } else if (bits == 2) {
-            tmp = 1;
-        } else if (bits == 3) {
-            s21_set_bit(result, n, 1);
-            tmp = 1;
+    if (scale1 + scale2 <= 28) {
+        for (int n = 112, tmp = 0; n <= 119; n++) {  // суммируем скейлы
+            int bits = s21_get_bit(value_1, n) + s21_get_bit(value_2, n) + tmp;
+            if (bits == 1) {
+                s21_set_bit(result, n, 1);
+                tmp = 0;
+            } else if (bits == 2) {
+                tmp = 1;
+            } else if (bits == 3) {
+                s21_set_bit(result, n, 1);
+                tmp = 1;
+            }
         }
+    } else {
+        mul_res = sign1 + sign2 == 0 ? 1 : sign1 + sign2 == 1 ? 2 : 1;
     }
 
     // ставим знак
@@ -105,7 +113,7 @@ int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
     } else if (!s21_get_bit(value_1, 127) && s21_get_bit(value_2, 127)) {  // if val1 > 0 && val2 < 0 -> -res
         s21_set_bit(result, 127, 1);
     }
-    return 0;
+    return mul_res;
 }
 
 // Возвращает 1 если на byte-ом байте в числе number стоит 1
@@ -140,35 +148,16 @@ void s21_shift_decimal_left(s21_decimal* number) {
     s21_set_bit(number, 64, mid_last_bit);
 }
 
-void s21_shift_decimal_right(s21_decimal* number) {
-    int mid_first_bit = s21_get_bit(*number, 32);
-    int high_first_bit = s21_get_bit(*number, 64);
-
-    number->bits[0] >>= 1;
-    number->bits[1] >>= 1;
-    number->bits[2] >>= 1;
-
-    s21_set_bit(number, 31, high_first_bit);
-    s21_set_bit(number, 63, mid_first_bit);
-}
-
-//  Сдвигает вправо n-ный байт на shift байтов в числе number
-void s21_shift_right(s21_decimal* number, int shift, int n) {
-    int byte = n / 32;
-    n = n % 32;
-    number->bits[byte] ^= shift >> n;
-}
-
-void int_set_bit(int* number, int byte, int n) {
+void int_set_bit(unsigned int* number, int byte, int n) {
     if (int_get_bit(*number, byte) != n)
         int_shift_left(number, 1, byte);
 }
 
-int int_get_bit(int number, int byte) {
+int int_get_bit(unsigned int number, int byte) {
     return (number & 1 << byte) ? 1 : 0;
 }
 
-void int_shift_left(int* num, int shift, int n) {
+void int_shift_left(unsigned int* num, int shift, int n) {
     *num ^= shift << n;
 }
 
@@ -391,6 +380,7 @@ int s21_sub(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
             s21_set_bit(&value_2, 127, 0);
             s21_sub_res(value_2, value_1, result);
         } else if (s21_get_bit(value_1, 127) == 0 && s21_get_bit(value_2, 127) == 1) {
+            s21_set_bit(&value_2, 127, 0);
             res = s21_add(value_1, value_2, result);
         } else if (s21_get_bit(value_1, 127) == 0 && s21_get_bit(value_2, 127) == 0) {
             s21_sub_res(value_1, value_2, result);
@@ -422,86 +412,6 @@ int s21_sub_res(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
 
 //  конвертация из float в s21_decimal. Возвращает 0 при успехе и 1 при ошибке
 int s21_from_float_to_decimal(float src, s21_decimal *dst) {
-    // int converting_res = 0;
-    // if (dst == NULL || !isfinite(src)) {
-    //     converting_res = 1;
-    // } else {
-    //     s21_decimal_init(dst);
-    //     // Считываем знак
-    //     int float_sign = (*(unsigned int*)(&src) & 1 << 31) ? 1 : 0;
-    //     //
-    //     if (src < 0) src *= -1;
-    //     float tmp_fl = src;
-    //     // считываем экспоненту
-    //     int exponent = 0;
-    //     for (int i = 30; i >= 23; i--) {
-    //         int bit = (*(unsigned int*)(&tmp_fl) >> i&1);
-    //         exponent = exponent << 1;
-    //         int_set_bit((int *) &exponent, 0, bit);
-    //     }
-    //     exponent -= 127;
-    //     //
-
-    //     // обработка экспоненты и нормализация числа
-    //     if (exponent > 95) {
-    //         converting_res = 1;
-    //     } else if (exponent > -95) {
-    //         int scale = 0;
-    //         float_normalising(&tmp_fl, &scale);
-    //         double result = 1;
-
-    //         // возводим все биты мантиссы в отрицательную степень двойки
-    //         for (int i = 1, j = 22; j >= 0; i++, j--) {
-    //             if ((*(unsigned int*)(&src) & 1 << j))
-    //                 result += pow(2, -i);
-    //         }
-
-    //         // приводим число к 8-9 знакам перед запятой
-    //         result *= pow(2, exponent);
-    //         result *= pow(10, 8 + scale);
-
-    //         if (scale > 0) {
-    //             while (result < 10000000) {
-    //                 result *= 10;
-    //             }
-    //         }
-
-    //         long int tmp = round(result);
-    //         int remainder = 0;
-
-    //         while (tmp >= 10000000) {
-    //             remainder = tmp % 10;
-    //             tmp = round(tmp);
-    //             tmp /= 10;
-    //         }
-
-    //         while (scale + 7 > 29) {
-    //             remainder = tmp % 10;
-    //             tmp /= 10;
-    //             scale--;
-    //         }
-
-    //         if (remainder > 4) {
-    //             tmp++;
-    //         }
-
-    //         while (tmp % 10 == 0) {
-    //             tmp /= 10;
-    //             scale--;
-    //         }
-
-    //         s21_from_int_to_decimal(tmp, dst);
-
-    //         while (scale + 7 <= 0) {
-    //             mul_by_10(dst), scale++;
-    //         }
-
-    //         s21_set_bit(dst, 127, float_sign);  // устанавливаем знак
-    //         s21_set_scale(dst, scale + 6);  // устанавливаем скейл
-    //     }
-    // }
-    // return converting_res;
-
     int status = 0;
     if (src == 1 / 0.0 && src == 0 / 0.0 && src == -1 / 0.0 && src == -0 / 0.0)
         status = 1;
@@ -543,14 +453,28 @@ int s21_from_float_to_decimal(float src, s21_decimal *dst) {
     return status;
 }
 
-void float_normalising(float* num, int* scale) {
-    while ((unsigned long int)*num < 1) {
-        *num *= 10;
-        *scale += 1;
+
+void getBinaryFromFloat(float src, char *float_bin_buff) {
+    union float_value float_number_bits;
+    float_number_bits.float_view = src;
+    for (unsigned int mask = 0x80000000; mask; mask >>= 1) {
+        *float_bin_buff = !!(float_number_bits.int_view & mask);
+        float_bin_buff++;
     }
-    while ((unsigned long int)*num > 10) {
-        *num /= 10;
-        *scale -= 1;
+}
+
+int getScaleFloat(const char *src) {
+    int result = 0, base = 1;
+    for (int i = 8; i > 0; i--) {
+        result += src[i] * base;
+        base = base * 2;
+    }
+    return (result - 127);
+}
+
+void writeMantissaToDecimal(s21_decimal *d, char *float_bin_buff, int exp) {
+    for (int i = exp - 1, j = 9; i >= 0 && j < 32; i--, j++) {
+        if (float_bin_buff[j]) s21_set_bit(d, i, 1);
     }
 }
 
@@ -585,42 +509,6 @@ int s21_negate(s21_decimal value, s21_decimal *result) {
 int equals_zero(s21_decimal value) {
     s21_decimal zero = {{0, 0, 0, 0}};
     return s21_is_equal(value, zero);
-}
-
-// 0 - OK
-// 1 - число слишком велико или равно бесконечности
-// 2 - число слишком мало или равно отрицательной бесконечности
-// 3 - деление на 0
-
-int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
-    int status = 0;
-    int sign1 = s21_get_bit(value_1, 127);
-    int sign2 = s21_get_bit(value_2, 127);
-
-    if (equals_zero(value_2) == 1) {
-        status = 3;
-    } else if (equals_zero(value_1) == 1) {
-        s21_decimal_init(result);
-    } else {
-        s21_set_equal_scale(&value_1, &value_2);
-        if (equals_zero(value_1) == 1) {
-            status = 2;
-        } else if (equals_zero(value_2) == 1) {
-            status = 1;
-            if (sign1 != sign2) {
-                status = 2;
-            }
-        } else {
-            div_processing(&value_1, &value_2, result);
-            if (equals_zero(*result) == 1) {
-                status = 2;
-            }
-        }
-        if (sign1 != sign2) {
-            s21_set_bit(result, 127, 1);
-        }
-    }
-    return status;
 }
 
 int get_higher_bit(s21_decimal value) {
@@ -684,13 +572,17 @@ int s21_truncate(s21_decimal value, s21_decimal* result) {
 
 int s21_from_decimal_to_int(s21_decimal src, int *dst) {
     int res = 0;
-    if (src.bits[1] == 0 && src.bits[2] == 0 && !s21_get_bit(src, 31)) {
+    if (dst) {
         *dst = 0;  // avoiding errors
         int sign = s21_get_bit(src, 127);
         s21_decimal tmp = {{0, 0, 0, 0}};
         s21_truncate(src, &tmp);
-        *dst = tmp.bits[0];
-        if (sign == 1) *dst *= -1;
+        if (get_higher_bit(tmp) < 31) {
+            *dst = tmp.bits[0];
+            if (sign == 1) *dst *= -1;
+        } else {
+            res = 1;
+        }
     } else {
         res = 1;
     }
@@ -758,6 +650,44 @@ int s21_from_decimal_to_float(s21_decimal src, float *dst) {
         *dst = tmp;
     }
     return ret;
+}
+
+// -----------------------division------------------------------------------
+
+// 0 - OK
+// 1 - число слишком велико или равно бесконечности
+// 2 - число слишком мало или равно отрицательной бесконечности
+// 3 - деление на 0
+
+int s21_div(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
+    int status = 0;
+    int sign1 = s21_get_bit(value_1, 127);
+    int sign2 = s21_get_bit(value_2, 127);
+
+    if (equals_zero(value_2) == 1) {
+        status = 3;
+    } else if (equals_zero(value_1) == 1) {
+        s21_decimal_init(result);
+    } else {
+        s21_set_equal_scale(&value_1, &value_2);
+        if (equals_zero(value_1) == 1) {
+            status = 2;
+        } else if (equals_zero(value_2) == 1) {
+            status = 1;
+            if (sign1 != sign2) {
+                status = 2;
+            }
+        } else {
+            div_processing(&value_1, &value_2, result);
+            if (equals_zero(*result) == 1) {
+                status = 2;
+            }
+        }
+        if (sign1 != sign2) {
+            s21_set_bit(result, 127, 1);
+        }
+    }
+    return status;
 }
 
 void div_processing(s21_decimal *value_1, s21_decimal *value_2,
@@ -894,36 +824,16 @@ void initMinuend(unsigned int *minuend, s21_decimal d, int begin) {
 int s21_mod(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
     int res = 0;
     s21_decimal div_res;
-    if (res = s21_div(value_1, value_2, &div_res) == 0) {
+    if (s21_div(value_1, value_2, &div_res) == 0) {
+        print_decimal(div_res);
         s21_truncate(div_res, &div_res);  // 332
+        print_decimal(div_res);
         s21_mul(div_res, value_2, &div_res);  // 664
+        print_decimal(div_res);
         s21_sub(value_1, div_res, result);
+        print_decimal(*result);
     } else {
         res = 1;
     }
     return res;
-}
-
-void getBinaryFromFloat(float src, char *float_bin_buff) {
-    union float_value float_number_bits;
-    float_number_bits.float_view = src;
-    for (unsigned int mask = 0x80000000; mask; mask >>= 1) {
-        *float_bin_buff = !!(float_number_bits.int_view & mask);
-        float_bin_buff++;
-    }
-}
-
-int getScaleFloat(const char *src) {
-    int result = 0, base = 1;
-    for (int i = 8; i > 0; i--) {
-        result += src[i] * base;
-        base = base * 2;
-    }
-    return (result - 127);
-}
-
-void writeMantissaToDecimal(s21_decimal *d, char *float_bin_buff, int exp) {
-    for (int i = exp - 1, j = 9; i >= 0 && j < 32; i--, j++) {
-        if (float_bin_buff[j]) s21_set_bit(d, i, 1);
-    }
 }
