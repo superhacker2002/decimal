@@ -3,16 +3,6 @@
 // bits[0] -
 
 int main() {
-<<<<<<< HEAD
-    s21_decimal num1 = {{7000000,0,0,0}};
-    s21_decimal num2 = {{100000,0,0,0}};
-    s21_decimal res;
-    s21_mul(num1, num2, &res);
-    for (int i = 0; i < 10; i++) {
-        s21_mul(res, num2, &res);
-        print_decimal(res);
-    }
-=======
     s21_decimal num1 = {{30, 0, 0, 0}};
     s21_decimal num2 = {{6, 0, 0, 0}};
     s21_decimal num3 = {{100,0,0,0}};
@@ -23,7 +13,6 @@ int main() {
     print_decimal(num2);
     s21_div(num1, num2, &res);
     print_decimal(res);
->>>>>>> 5d7f74514e33cc32ec55d88f83c09fa0fbff8d0d
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
