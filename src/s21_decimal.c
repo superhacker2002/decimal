@@ -3,13 +3,14 @@
 // bits[0] - 
 
 int main() {
-    s21_decimal num1 = {{0,0,0,0}};
-    s21_decimal num2 = {{0,0,0,0}};
-    // s21_decimal res;
-    s21_from_float_to_decimal(70.756876, &num1);
-    int res;
-    s21_from_decimal_to_int(num1, &res);
-    printf("%d", res);
+    s21_decimal num1 = {{7000000,0,0,0}};
+    s21_decimal num2 = {{100000,0,0,0}};
+    s21_decimal res;
+    s21_mul(num1, num2, &res);
+    for (int i = 0; i < 10; i++) {
+        s21_mul(res, num2, &res);
+        print_decimal(res);
+    }
 }
 
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
@@ -110,7 +111,7 @@ int s21_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
 int s21_get_bit(s21_decimal number, int byte) {
     int bits = byte / 32;
     byte = byte % 32;
-    return (number.bits[bits]&1<<byte) ? 1 : 0;
+    return (number.bits[bits] & 1 << byte) ? 1 : 0;
 }
 
 // Устанавливает byte-й бит в числе number на n=(0/1)
@@ -353,6 +354,7 @@ int s21_sub(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
             s21_sub_res(value_1, value_2, result);
         }
 }
+    s21_set_scale(result, get_scale(value_1));
     return res;
 }
 
