@@ -1,3 +1,6 @@
+#ifndef SRC_S21_DECIMAL_H_
+#define SRC_S21_DECIMAL_H_
+
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
@@ -12,6 +15,11 @@
 typedef struct {
     int bits[4];
 } s21_decimal;
+
+union float_value {
+    unsigned int int_view;
+    float float_view;
+};
 
 int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
 // int s21_bit(int number, int byte);
@@ -39,14 +47,33 @@ void from_float_to_string(float src, char* float_bin_buff);
 void int_set_bit(int* number, int byte, int n);
 int int_get_bit(int number, int byte);
 void int_shift_left(int* num, int shift, int n);
-void float_normalising (float* num, int* scale);
+void float_normalising(float* num, int* scale);
 void mul_by_10(s21_decimal* num);
-void s21_set_scale (s21_decimal* num, int scale);
+void s21_set_scale(s21_decimal* num, int scale);
 int s21_negate(s21_decimal value, s21_decimal *result);
-int get_higher_bit (s21_decimal value);
+int get_higher_bit(s21_decimal value);
 int get_scale(s21_decimal value);
 void s21_set_equal_scale(s21_decimal* num1, s21_decimal* num2);
-void s21_set_scale (s21_decimal* num, int scale);
-void s21_div_by_10 (s21_decimal* number);
-int s21_truncate (s21_decimal value, s21_decimal* result);
+void s21_set_scale(s21_decimal* num, int scale);
+int s21_div_by_10(s21_decimal* number);
+int s21_truncate(s21_decimal value, s21_decimal* result);
 int s21_from_decimal_to_int(s21_decimal src, int *dst);
+void s21_set_equal_scale_back(s21_decimal* num1, s21_decimal* num2);
+void s21_shift_decimal_left(s21_decimal* number);
+int s21_round(s21_decimal value, s21_decimal *result);
+int s21_floor(s21_decimal value, s21_decimal *result);
+int s21_negate(s21_decimal value, s21_decimal *result);
+int s21_div(s21_decimal value1, s21_decimal value2, s21_decimal* result);
+int s21_from_decimal_to_float(s21_decimal src, float *dst);
+void div_processing(s21_decimal *value_1, s21_decimal *value_2,
+                  s21_decimal *result);
+                  int initDecimalMinuend(s21_decimal *minuend, s21_decimal value_1,
+                       s21_decimal value_2);
+int sizeOfNumber(s21_decimal d);
+void initMinuend(unsigned int *minuend, s21_decimal d, int begin);
+int s21_mod(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
+void getBinaryFromFloat(float src, char *float_bin_buff);
+int getScaleFloat(const char *src);
+void writeMantissaToDecimal(s21_decimal *d, char *float_bin_buff, int exp);
+
+#endif  //  SRC_S21_DECIMAL_H_
