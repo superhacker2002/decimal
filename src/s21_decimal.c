@@ -772,14 +772,14 @@ void div_processing(s21_decimal *value_1, s21_decimal *value_2,
         status_of_mul = 0;
         s21_decimal_init(&minuend);
         s21_decimal_init(&resultOfDevide);
-        if (s21_is_less(*value_1, *value_2)) {
-            minuend = *value_1;
+        if (s21_is_less(*value_1, *value_2)) {  // делимое меньше делителя
+            minuend = *value_1;  // уменьшаемое value1
             i = -1;
-            if (firstCycle == 1) {
+            if (firstCycle == 1) {  // не первая итерация
                 wholeNumber--;
             }
         } else {
-            i = initDecimalMinuend(&minuend, *value_1, *value_2);
+            i = initDecimalMinuend(&minuend, *value_1, *value_2);  
         }
 
         j = 95;
@@ -828,6 +828,7 @@ void div_processing(s21_decimal *value_1, s21_decimal *value_2,
     s21_set_scale(result, Scale);
 }
 
+// получение уменьшаемого которое >= делителю
 int initDecimalMinuend(s21_decimal *minuend, s21_decimal value_1,
                        s21_decimal value_2) {
     int i = get_higher_bit(value_1);
