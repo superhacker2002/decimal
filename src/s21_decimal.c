@@ -2,17 +2,6 @@
 #include <float.h>
 // bits[0] -
 
-// int main() {
-//     s21_decimal num1 = {{30, 0, 0, 0}};
-//     s21_decimal num2 = {{6, 0, 0, 0}};
-//     s21_decimal num3 = {{100,0,0,0}};
-//     s21_decimal res = {{0,0,0,0}};
-//     s21_from_float_to_decimal(0.5688, &num1);
-//     s21_from_float_to_decimal(1.486, &num2);
-//     print_decimal(num1);
-//     print_decimal(num2);
-// }
-
 // Складывает два числа, результат записывается в result. Возвращает 0 если число ок, 1-3 если число inf/nan
 // 1 inf, 2 -inf
 int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {

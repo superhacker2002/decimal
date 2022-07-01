@@ -1,6 +1,5 @@
 #include <check.h>
 #include <math.h>
-
 #include "s21_decimal.h"
 
 #define NaN 0.0 / 0.0

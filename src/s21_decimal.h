@@ -16,11 +16,6 @@ typedef struct {
     int bits[4];
 } s21_decimal;
 
-union float_value {
-    unsigned int int_view;
-    float float_view;
-};
-
 int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
 int s21_get_bit(s21_decimal number, int byte);
 int s21_equals_intmax(int num);

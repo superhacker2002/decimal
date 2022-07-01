@@ -8,6 +8,7 @@ enum bits {
     SCALE
 };
 
+
 START_TEST(test_s21_add_int) {
     s21_decimal test_value_1 = {{0, 0, 0, 0}};
     s21_decimal test_value_2 = {{0, 0, 0, 0}};

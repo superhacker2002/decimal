@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -Werror -std=c11
+CFLAGS=-Wall -Wextra -Werror
 LIBS=-lcheck
 LFLAGS=-fprofile-arcs -ftest-coverage
 
