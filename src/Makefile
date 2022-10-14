@@ -30,15 +30,6 @@ open:
 
 rebuild: clean all
 
-check:
-	cp ../materials/linters/CPPLINT.cfg ./
-	cppcheck --enable=all --suppress=missingIncludeSystem *.c *.h
-	python3 ../materials/linters/cpplint.py --extensions=c *.c *.h
-	make test
-	CK_FORK=no leaks --atExit -- ./test.out
-	make clean
-	rm -rf CPPLINT.cfg
-
 clean:
 	rm -rf *.gc* *.o *.a *.out *.info test.out
 	rm -rf report
